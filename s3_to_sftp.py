@@ -44,6 +44,8 @@ assert SSH_PASSWORD or SSH_PRIVATE_KEY, "Missing SSH_PASSWORD or SSH_PRIVATE_KEY
 # optional
 SSH_PORT = int(os.getenv('SSH_PORT', 22))
 SSH_DIR = os.getenv('SSH_DIR')
+SSH_AUTH_TIMEOUT = int(os.getenv('SSH_AUTH_TIMEOUT', 60))
+
 # filename mask used for the remote file
 SSH_FILENAME = os.getenv('SSH_FILENAME', 'data_{current_date}')
 
@@ -88,7 +90,8 @@ def on_trigger_event(event, context):
         port=SSH_PORT,
         username=SSH_USERNAME,
         password=SSH_PASSWORD,
-        pkey=key_obj
+        pkey=key_obj,
+        auth_timeout=SSH_AUTH_TIMEOUT
     )
     if SSH_DIR:
         sftp_client.chdir(SSH_DIR)
@@ -114,9 +117,10 @@ def on_trigger_event(event, context):
             delete_file(s3_file)
 
 
-def connect_to_sftp(hostname, port, username, password, pkey):
+def connect_to_sftp(hostname, port, username, password, pkey, auth_timeout):
     """Connect to SFTP server and return client object."""
     transport = paramiko.Transport((hostname, port))
+    transport.auth_timeout = auth_timeout
     transport.connect(username=username, password=password, pkey=pkey)
     client = paramiko.SFTPClient.from_transport(transport)
     logger.debug(f"S3-SFTP: Connected to remote SFTP server")
